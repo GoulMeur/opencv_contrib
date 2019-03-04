@@ -77,7 +77,7 @@ class LearningBasedWBImpl : public LearningBasedWB
     Mat feature_idx_Mat, thresh_vals_Mat, leaf_vals_Mat;
     Mat mask;
     int src_max_val;
-
+	int balance[3];
     void preprocessing(Mat &src);
     void getAverageAndBrightestColorChromaticity(Vec2f &average_chromaticity, Vec2f &brightest_chromaticity, Mat &src);
     void getColorPaletteMode(Vec2f &dst, hist_elem *palette);
@@ -95,6 +95,8 @@ class LearningBasedWBImpl : public LearningBasedWB
         palette_size = 300;
         palette_bandwidth = 0.1f;
         prediction_thresh = 0.025f;
+		balance = { };
+		
         /* try to load model from file */
         FileStorage fs;
         if (!path_to_model.empty() && fs.open(path_to_model, FileStorage::READ))
@@ -135,6 +137,31 @@ class LearningBasedWBImpl : public LearningBasedWB
     int getHistBinNum() const CV_OVERRIDE { return hist_bin_num; }
     void setHistBinNum(int val) CV_OVERRIDE { hist_bin_num = val; }
 
+    int getbalanceWhite(InputArray _src) CV_OVERRIDE
+    {
+        CV_Assert(!_src.empty());
+        CV_Assert(_src.isContinuous());
+        CV_Assert(_src.type() == CV_8UC3 || _src.type() == CV_16UC3);
+        Mat src = _src.getMat();
+
+        vector<Vec2f> features;
+        extractSimpleFeatures(src, features);
+        Vec2f illuminant = predictIlluminant(features);
+
+        float denom = 1 - illuminant[0] - illuminant[1];
+        float gainB = 1.0f;
+        float gainG = denom / illuminant[1];
+        float gainR = denom / illuminant[0];
+		
+		static float array[3];
+		balance[0] = gainR;
+		balance[1] = gainG;
+		balance[2] = gainB;
+		return balance;		
+	}
+};
+
+	
     void extractSimpleFeatures(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
         CV_Assert(!_src.empty());
