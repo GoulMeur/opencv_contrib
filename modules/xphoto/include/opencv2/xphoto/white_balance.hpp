@@ -168,6 +168,8 @@ Currently supports images of type @ref CV_8UC3 and @ref CV_16UC3.
 class CV_EXPORTS_W LearningBasedWB : public WhiteBalancer
 {
   public:
+  
+    CV_WRAP virtual int getbalanceWhite(InputArray src) = 0;
     /** @brief Implements the feature extraction part of the algorithm.
 
     In accordance with @cite Cheng2015 , computes the following features for the input image:
